@@ -30,6 +30,27 @@ import { ar } from "date-fns/locale";
 import { useLogAction } from "@/hooks/useActionLog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+async function invokeManageUsers(body: Record<string, unknown>) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData?.session?.access_token;
+  if (!accessToken) throw new Error("لا توجد جلسة نشطة. يرجى تسجيل الدخول مرة أخرى.");
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const response = await fetch(`${supabaseUrl}/functions/v1/manage-users`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await response.json();
+  if (!response.ok) throw new Error(data?.error || `Error: ${response.status}`);
+  return data;
+}
+
 interface UserItem {
   id: string;
   email: string;
@@ -192,10 +213,7 @@ const UsersPage = () => {
   const { data: users, isLoading } = useQuery({
     queryKey: ["managed_users"],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("manage-users", {
-        body: { action: "list" },
-      });
-      if (error) throw error;
+      const data = await invokeManageUsers({ action: "list" });
       return data as UserItem[];
     },
   });
@@ -239,30 +257,26 @@ const UsersPage = () => {
     setSaving(true);
     try {
       if (editingUser) {
-        const { data, error } = await supabase.functions.invoke("manage-users", {
-          body: {
-            action: "update",
-            user_id: editingUser.id,
-            role: form.role,
-            permissions: form.role === "customized" ? form.permissions : undefined,
-            full_name: form.full_name.trim(),
-          },
+        const data = await invokeManageUsers({
+          action: "update",
+          user_id: editingUser.id,
+          role: form.role,
+          permissions: form.role === "customized" ? form.permissions : undefined,
+          full_name: form.full_name.trim(),
         });
-        if (error || data?.error) throw new Error(data?.error || error?.message);
+        if (data?.error) throw new Error(data.error);
         logAction.mutate({ action: "update", entity_type: "user", entity_name: form.full_name.trim() });
         toast.success("تم تعديل المستخدم بنجاح");
       } else {
-        const { data, error } = await supabase.functions.invoke("manage-users", {
-          body: {
-            action: "create",
-            email: form.email.trim(),
-            password: form.password,
-            full_name: form.full_name.trim(),
-            role: form.role,
-            permissions: form.role === "customized" ? form.permissions : undefined,
-          },
+        const data = await invokeManageUsers({
+          action: "create",
+          email: form.email.trim(),
+          password: form.password,
+          full_name: form.full_name.trim(),
+          role: form.role,
+          permissions: form.role === "customized" ? form.permissions : undefined,
         });
-        if (error || data?.error) throw new Error(data?.error || error?.message);
+        if (data?.error) throw new Error(data.error);
         logAction.mutate({ action: "create", entity_type: "user", entity_name: form.full_name.trim() });
         toast.success("تم إضافة المستخدم بنجاح");
       }
@@ -280,10 +294,8 @@ const UsersPage = () => {
     if (!deleteTarget) return;
     setSaving(true);
     try {
-      const { data, error } = await supabase.functions.invoke("manage-users", {
-        body: { action: "delete", user_id: deleteTarget.id },
-      });
-      if (error || data?.error) throw new Error(data?.error || error?.message);
+      const data = await invokeManageUsers({ action: "delete", user_id: deleteTarget.id });
+      if (data?.error) throw new Error(data.error);
       logAction.mutate({ action: "delete", entity_type: "user", entity_name: deleteTarget.full_name });
       toast.success("تم حذف المستخدم بنجاح");
       queryClient.invalidateQueries({ queryKey: ["managed_users"] });
@@ -300,10 +312,8 @@ const UsersPage = () => {
     if (newPassword.length < 6) { toast.error("كلمة المرور يجب أن تكون 6 أحرف على الأقل"); return; }
     setSaving(true);
     try {
-      const { data, error } = await supabase.functions.invoke("manage-users", {
-        body: { action: "reset_password", user_id: resetTarget.id, new_password: newPassword },
-      });
-      if (error || data?.error) throw new Error(data?.error || error?.message);
+      const data = await invokeManageUsers({ action: "reset_password", user_id: resetTarget.id, new_password: newPassword });
+      if (data?.error) throw new Error(data.error);
       toast.success("تم إعادة تعيين كلمة المرور بنجاح");
     } catch (err: any) {
       toast.error("خطأ: " + err.message);
