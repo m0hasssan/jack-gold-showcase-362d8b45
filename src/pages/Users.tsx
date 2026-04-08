@@ -257,16 +257,14 @@ const UsersPage = () => {
     setSaving(true);
     try {
       if (editingUser) {
-        const { data, error } = await supabase.functions.invoke("manage-users", {
-          body: {
-            action: "update",
-            user_id: editingUser.id,
-            role: form.role,
-            permissions: form.role === "customized" ? form.permissions : undefined,
-            full_name: form.full_name.trim(),
-          },
+        const data = await invokeManageUsers({
+          action: "update",
+          user_id: editingUser.id,
+          role: form.role,
+          permissions: form.role === "customized" ? form.permissions : undefined,
+          full_name: form.full_name.trim(),
         });
-        if (error || data?.error) throw new Error(data?.error || error?.message);
+        if (data?.error) throw new Error(data.error);
         logAction.mutate({ action: "update", entity_type: "user", entity_name: form.full_name.trim() });
         toast.success("تم تعديل المستخدم بنجاح");
       } else {
