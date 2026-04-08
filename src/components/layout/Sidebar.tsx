@@ -107,12 +107,13 @@ export function Sidebar() {
     if (item.href === "/") return true;
     if (isAdmin) return true;
     
-    const permKey = routePermissionMap[item.href];
-    if (permKey) return can(permKey, "view");
-    
+    // For items with children, show parent if ANY child is visible
     if (item.children) {
       return item.children.some((child) => canSeeItem(child));
     }
+    
+    const permKey = routePermissionMap[item.href];
+    if (permKey) return can(permKey, "view");
     
     return false;
   };
