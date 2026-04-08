@@ -294,10 +294,8 @@ const UsersPage = () => {
     if (!deleteTarget) return;
     setSaving(true);
     try {
-      const { data, error } = await supabase.functions.invoke("manage-users", {
-        body: { action: "delete", user_id: deleteTarget.id },
-      });
-      if (error || data?.error) throw new Error(data?.error || error?.message);
+      const data = await invokeManageUsers({ action: "delete", user_id: deleteTarget.id });
+      if (data?.error) throw new Error(data.error);
       logAction.mutate({ action: "delete", entity_type: "user", entity_name: deleteTarget.full_name });
       toast.success("تم حذف المستخدم بنجاح");
       queryClient.invalidateQueries({ queryKey: ["managed_users"] });
