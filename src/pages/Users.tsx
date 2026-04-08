@@ -268,17 +268,15 @@ const UsersPage = () => {
         logAction.mutate({ action: "update", entity_type: "user", entity_name: form.full_name.trim() });
         toast.success("تم تعديل المستخدم بنجاح");
       } else {
-        const { data, error } = await supabase.functions.invoke("manage-users", {
-          body: {
-            action: "create",
-            email: form.email.trim(),
-            password: form.password,
-            full_name: form.full_name.trim(),
-            role: form.role,
-            permissions: form.role === "customized" ? form.permissions : undefined,
-          },
+        const data = await invokeManageUsers({
+          action: "create",
+          email: form.email.trim(),
+          password: form.password,
+          full_name: form.full_name.trim(),
+          role: form.role,
+          permissions: form.role === "customized" ? form.permissions : undefined,
         });
-        if (error || data?.error) throw new Error(data?.error || error?.message);
+        if (data?.error) throw new Error(data.error);
         logAction.mutate({ action: "create", entity_type: "user", entity_name: form.full_name.trim() });
         toast.success("تم إضافة المستخدم بنجاح");
       }
