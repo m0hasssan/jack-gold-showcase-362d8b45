@@ -30,6 +30,27 @@ import { ar } from "date-fns/locale";
 import { useLogAction } from "@/hooks/useActionLog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+async function invokeManageUsers(body: Record<string, unknown>) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData?.session?.access_token;
+  if (!accessToken) throw new Error("لا توجد جلسة نشطة. يرجى تسجيل الدخول مرة أخرى.");
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const response = await fetch(`${supabaseUrl}/functions/v1/manage-users`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await response.json();
+  if (!response.ok) throw new Error(data?.error || `Error: ${response.status}`);
+  return data;
+}
+
 interface UserItem {
   id: string;
   email: string;
