@@ -213,10 +213,7 @@ const UsersPage = () => {
   const { data: users, isLoading } = useQuery({
     queryKey: ["managed_users"],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("manage-users", {
-        body: { action: "list" },
-      });
-      if (error) throw error;
+      const data = await invokeManageUsers({ action: "list" });
       return data as UserItem[];
     },
   });
