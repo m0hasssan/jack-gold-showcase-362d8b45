@@ -312,10 +312,8 @@ const UsersPage = () => {
     if (newPassword.length < 6) { toast.error("كلمة المرور يجب أن تكون 6 أحرف على الأقل"); return; }
     setSaving(true);
     try {
-      const { data, error } = await supabase.functions.invoke("manage-users", {
-        body: { action: "reset_password", user_id: resetTarget.id, new_password: newPassword },
-      });
-      if (error || data?.error) throw new Error(data?.error || error?.message);
+      const data = await invokeManageUsers({ action: "reset_password", user_id: resetTarget.id, new_password: newPassword });
+      if (data?.error) throw new Error(data.error);
       toast.success("تم إعادة تعيين كلمة المرور بنجاح");
     } catch (err: any) {
       toast.error("خطأ: " + err.message);
